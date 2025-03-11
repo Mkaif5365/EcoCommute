@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple Mappls Map Test</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #0a2540;
+      color: white;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .map-container {
+      height: 500px;
+      width: 100%;
+      border: 1px solid #2a3a50;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+    .controls {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #0f1729;
+      border: 1px solid #2a3a50;
+      border-radius: 8px;
+    }
+    .log {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #0f1729;
+      border: 1px solid #2a3a50;
+      border-radius: 8px;
+      height: 200px;
+      overflow-y: auto;
+    }
+    .log-entry {
+      margin-bottom: 5px;
+      font-family: monospace;
+    }
+    .success {
+      color: #00aa55;
+    }
+    .error {
+      color: #ff5555;
+    }
+    .warning {
+      color: #ffaa00;
+    }
+    .info {
+      color: #55aaff;
+    }
+    button {
+      background-color: #00aa55;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    button:hover {
+      background-color: #008844;
+    }
+    .loading {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(10, 37, 64, 0.8);
+      z-index: 10;
+    }
+    .spinner {
+      border: 4px solid rgba(0, 170, 85, 0.3);
+      border-radius: 50%;
+      border-top: 4px solid #00aa55;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Simple Mappls Map Test</h1>
+    
+    <div id="mapContainer" class="map-container">
+      <div id="map" style="width: 100%; height: 100%;"></div>
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading map...</p>
+      </div>
+    </div>
+    
+    <div class="controls">
+      <button id="addTrafficBtn">Add Traffic Layer</button>
+      <button id="addMarkerBtn">Add Marker</button>
+      <button id="clearMapBtn">Clear Map</button>
+      <button id="reloadMapBtn">Reload Map</button>
+      <button id="backBtn">Back to App</button>
+    </div>
+    
+    <div id="log" class="log"></div>
+  </div>
+
+  <script>
+    // Log function
+    function log(message, type = 'info') {
+      const logContainer = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logContainer.appendChild(entry);
+      logContainer.scrollTop = logContainer.scrollHeight;
+      console.log(`[${type}] ${message}`);
+    }
+
+    // Global variables
+    let map = null;
+    let mapLoaded = false;
+    const apiKey = 'a6f5b905587a2e6ff31e4127f881783f'; // Hardcoded API key for testing
+    
+    // Show/hide loading indicator
+    function setLoading(isLoading) {
+      const loadingElement = document.getElementById('loading');
+      if (isLoading) {
+        loadingElement.style.display = 'flex';
+      } else {
+        loadingElement.style.display = 'none';
+      }
+    }
+    
+    // Initialize map
+    function initMap() {
+      try {
+        log('Initializing map...', 'info');
+        setLoading(true);
+        
+        if (typeof mappls === 'undefined') {
+          log('Mappls API not loaded', 'error');
+          setLoading(false);
+          return;
+        }
+        
+        // Log available methods
+        log('Available Mappls methods: ' + Object.keys(mappls).join(', '), 'info');
+        
+        // Check if Map constructor exists
+        if (!mappls.Map) {
+          log('Mappls Map constructor not found', 'error');
+          setLoading(false);
+          return;
+        }
+        
+        // Create map with basic options only
+        const mapOptions = {
+          center: [28.61, 77.23],
+          zoom: 12
+        };
+        
+        try {
+          // Create map instance
+          map = new mappls.Map('map', mapOptions);
+          
+          // Wait for map to load
+          if (map.on) {
+            map.on('load', function() {
+              log('Map loaded event fired', 'success');
+              mapLoaded = true;
+              setLoading(false);
+            });
+            
+            // Add error handler
+            map.on('error', function(e) {
+              log('Map error: ' + (e.error || 'Unknown error'), 'error');
+              setLoading(false);
+            });
+          } else {
+            // If no events available, assume map loaded
+            log('Map initialized (no load event available)', 'success');
+            mapLoaded = true;
+            setLoading(false);
+          }
+          
+          // Fallback in case events don't fire
+          setTimeout(function() {
+            if (!mapLoaded) {
+              log('Map load timeout - assuming map is ready', 'warning');
+              mapLoaded = true;
+              setLoading(false);
+            }
+          }, 5000);
+          
+        } catch (mapError) {
+          log('Error creating map instance: ' + mapError.message, 'error');
+          setLoading(false);
+        }
+      } catch (error) {
+        log('Error initializing map: ' + error.message, 'error');
+        setLoading(false);
+      }
+    }
+    
+    // Load Mappls API
+    function loadMapplsAPI() {
+      log('Loading Mappls API...', 'info');
+      setLoading(true);
+      
+      // Remove any existing scripts
+      const existingScript = document.querySelector('script[src*="mappls.com/advancedmaps/api"]');
+      if (existingScript) {
+        existingScript.remove();
+        log('Removed existing Mappls API script', 'info');
+      }
+      
+      const script = document.createElement('script');
+      script.src = `https://apis.mappls.com/advancedmaps/api/${apiKey}/map_sdk?v=3.0&layer=vector`;
+      script.async = true;
+      
+      script.onload = function() {
+        log('Mappls API script loaded successfully', 'success');
+        setTimeout(initMap, 500); // Small delay to ensure API is fully initialized
+      };
+      
+      script.onerror = function(error) {
+        log('Failed to load Mappls API: ' + (error || 'Unknown error'), 'error');
+        setLoading(false);
+      };
+      
+      document.head.appendChild(script);
+    }
+    
+    // Add traffic layer
+    function addTrafficLayer() {
+      if (!map) {
+        log('Map not initialized', 'error');
+        return;
+      }
+      
+      if (!mapLoaded) {
+        log('Map not fully loaded yet', 'warning');
+      }
+      
+      try {
+        log('Attempting to add traffic layer...', 'info');
+        
+        // Try different methods to add traffic layer
+        if (typeof mappls.traffic === 'function') {
+          mappls.traffic({map: map});
+          log('Traffic layer added using mappls.traffic()', 'success');
+        } else if (typeof mappls.trafficLayer === 'function') {
+          mappls.trafficLayer({map: map});
+          log('Traffic layer added using mappls.trafficLayer()', 'success');
+        } else {
+          // Try alternative approaches
+          const methods = Object.keys(mappls).filter(key => 
+            key.toLowerCase().includes('traffic') || 
+            (typeof mappls[key] === 'function' && mappls[key].toString().includes('traffic'))
+          );
+          
+          if (methods.length > 0) {
+            log('Possible traffic methods found: ' + methods.join(', '), 'info');
+            methods.forEach(method => {
+              try {
+                if (typeof mappls[method] === 'function') {
+                  mappls[method]({map: map});
+                  log(`Attempted to add traffic using mappls.${method}()`, 'info');
+                }
+              } catch (e) {
+                log(`Failed with mappls.${method}(): ${e.message}`, 'warning');
+              }
+            });
+          } else {
+            log('No traffic layer method found in Mappls API', 'warning');
+            log('Available methods: ' + Object.keys(mappls).join(', '), 'info');
+          }
+        }
+      } catch (error) {
+        log('Error adding traffic layer: ' + error.message, 'error');
+      }
+    }
+    
+    // Add marker
+    function addMarker() {
+      if (!map) {
+        log('Map not initialized', 'error');
+        return;
+      }
+      
+      if (!mapLoaded) {
+        log('Map not fully loaded yet', 'warning');
+      }
+      
+      try {
+        if (!mappls.Marker) {
+          log('Mappls Marker constructor not found', 'error');
+          log('Available methods: ' + Object.keys(mappls).join(', '), 'info');
+          return;
+        }
+        
+        const position = [
+          28.61 + (Math.random() * 0.05 - 0.025),
+          77.23 + (Math.random() * 0.05 - 0.025)
+        ];
+        
+        const marker = new mappls.Marker({
+          map: map,
+          position: position,
+          title: "Marker " + new Date().toLocaleTimeString(),
+          draggable: true
+        });
+        
+        log(`Marker added at position [${position[0].toFixed(4)}, ${position[1].toFixed(4)}]`, 'success');
+      } catch (error) {
+        log('Error adding marker: ' + error.message, 'error');
+      }
+    }
+    
+    // Clear map
+    function clearMap() {
+      if (!map) {
+        log('Map not initialized', 'error');
+        return;
+      }
+      
+      try {
+        // Try to remove all markers and layers
+        if (map.eachLayer) {
+          map.eachLayer(function(layer) {
+            if (layer !== map.baseLayer) {
+              map.removeLayer(layer);
+            }
+          });
+          log('Layers cleared', 'success');
+        } else {
+          log('No method to clear layers found', 'warning');
+        }
+      } catch (error) {
+        log('Error clearing map: ' + error.message, 'error');
+      }
+    }
+    
+    // Reload map
+    function reloadMap() {
+      log('Reloading map...', 'info');
+      
+      // Try to clean up existing map
+      if (map) {
+        try {
+          if (map.remove) {
+            map.remove();
+          } else if (map.destroy) {
+            map.destroy();
+          }
+        } catch (e) {
+          log('Error cleaning up map: ' + e.message, 'warning');
+        }
+        map = null;
+      }
+      
+      mapLoaded = false;
+      
+      // Clear the map container
+      const mapContainer = document.getElementById('mapContainer');
+      const oldMap = document.getElementById('map');
+      if (oldMap) {
+        oldMap.remove();
+      }
+      
+      // Create new map div
+      const newMap = document.createElement('div');
+      newMap.id = 'map';
+      newMap.style.width = '100%';
+      newMap.style.height = '100%';
+      mapContainer.insertBefore(newMap, mapContainer.firstChild);
+      
+      // Reload API and map
+      loadMapplsAPI();
+    }
+    
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+      // Load Mappls API
+      loadMapplsAPI();
+      
+      // Button event listeners
+      document.getElementById('addTrafficBtn').addEventListener('click', addTrafficLayer);
+      document.getElementById('addMarkerBtn').addEventListener('click', addMarker);
+      document.getElementById('clearMapBtn').addEventListener('click', clearMap);
+      document.getElementById('reloadMapBtn').addEventListener('click', reloadMap);
+      document.getElementById('backBtn').addEventListener('click', function() {
+        window.location.href = '/map-test';
+      });
+    });
+  </script>
+</body>
+</html> 

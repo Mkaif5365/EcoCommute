@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mappls API Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        #header {
+            background-color: #0a2540;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        #map-container {
+            height: 500px;
+            width: 100%;
+            max-width: 1000px;
+            margin: 20px auto;
+            border: 1px solid #ccc;
+        }
+        #info {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>Mappls API Test</h1>
+    </div>
+    
+    <div id="info">
+        <h2>API Information</h2>
+        <p><strong>API Key:</strong> <span id="api-key">Loading...</span></p>
+        <p><strong>Status:</strong> <span id="status">Loading...</span></p>
+        <div id="error-container" style="display: none;">
+            <p class="error">Error:</p>
+            <p id="error-message"></p>
+        </div>
+    </div>
+    
+    <div id="map-container"></div>
+    
+    <script>
+        // Get API key from URL parameter or use default
+        const urlParams = new URLSearchParams(window.location.search);
+        const apiKey = urlParams.get('key') || 'a6f5b905587a2e6ff31e4127f881783f';
+        
+        // Display API key (partially masked)
+        document.getElementById('api-key').textContent = apiKey.substring(0, 8) + '...';
+        
+        // Function to initialize map
+        function initializeMap() {
+            console.log("Initializing map...");
+            
+            try {
+                if (window.mappls) {
+                    console.log("Creating map instance...");
+                    const map = new window.mappls.Map('map-container', {
+                        center: [28.6139, 77.2090], // Default center (Delhi)
+                        zoomControl: true,
+                        location: true,
+                        zoom: 12
+                    });
+                    
+                    console.log("Map instance created successfully");
+                    
+                    // Add a marker
+                    new window.mappls.Marker({
+                        map: map,
+                        position: [28.6139, 77.2090],
+                        title: "Delhi",
+                        draggable: false
+                    });
+                    
+                    document.getElementById('status').textContent = 'Map loaded successfully';
+                    document.getElementById('status').className = 'success';
+                } else {
+                    throw new Error("Mappls API not loaded");
+                }
+            } catch (error) {
+                console.error("Error initializing map:", error);
+                document.getElementById('status').textContent = 'Error loading map';
+                document.getElementById('status').className = 'error';
+                document.getElementById('error-container').style.display = 'block';
+                document.getElementById('error-message').textContent = error.message;
+            }
+        }
+        
+        // Load Mappls API
+        function loadMapplsAPI() {
+            const script = document.createElement('script');
+            script.src = `https://apis.mappls.com/advancedmaps/api/${apiKey}/map_sdk?v=3.0&layer=vector&libraries=marker,trafficLayer`;
+            script.async = true;
+            script.defer = true;
+            
+            script.onload = function() {
+                console.log("Mappls API loaded successfully");
+                initializeMap();
+            };
+            
+            script.onerror = function() {
+                console.error("Error loading Mappls API");
+                document.getElementById('status').textContent = 'Error loading Mappls API';
+                document.getElementById('status').className = 'error';
+                document.getElementById('error-container').style.display = 'block';
+                document.getElementById('error-message').textContent = 'Failed to load Mappls API script';
+            };
+            
+            document.head.appendChild(script);
+        }
+        
+        // Load the API when the page loads
+        window.onload = loadMapplsAPI;
+    </script>
+</body>
+</html> 
