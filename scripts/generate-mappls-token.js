@@ -97,12 +97,29 @@ async function generateMapplsToken() {
         envContent += `\nMAPPLS_ACCESS_TOKEN=${response.data.access_token}`;
       }
       
+      // Calculate and store token expiry time
+      const currentTime = Math.floor(Date.now() / 1000);
+      const expiryTime = currentTime + response.data.expires_in;
+      
+      // Check if MAPPLS_TOKEN_EXPIRES_AT already exists in .env
+      if (envContent.includes('MAPPLS_TOKEN_EXPIRES_AT=')) {
+        // Replace existing expiry time
+        envContent = envContent.replace(
+          /MAPPLS_TOKEN_EXPIRES_AT=.*/,
+          `MAPPLS_TOKEN_EXPIRES_AT=${expiryTime}`
+        );
+      } else {
+        // Add new expiry time
+        envContent += `\nMAPPLS_TOKEN_EXPIRES_AT=${expiryTime}`;
+      }
+      
       // Write updated content back to .env file
       fs.writeFileSync(envPath, envContent);
       
       console.log('Environment variables updated successfully!');
       console.log(`Access Token: ${response.data.access_token}`);
       console.log(`Token expires in: ${response.data.expires_in} seconds`);
+      console.log(`Token expires at: ${new Date(expiryTime * 1000).toLocaleString()}`);
       
       return response.data;
     } else {

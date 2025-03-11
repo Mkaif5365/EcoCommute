@@ -48,45 +48,15 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a5540] to-[#1b1b1b] text-white">
-      {/* Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#1b1b1b]/80 backdrop-blur-md">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="bg-[#00aa55] rounded-full p-2">
-              <Leaf className="h-5 w-5 text-[#0a2540]" />
-            </div>
-            <span className="font-bold text-xl text-[#00aa55]">EcoCommute+</span>
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-8">
-            <Link href="/#transport" className="text-sm font-medium hover:text-[#00aa55] transition-colors">
-              Transport Options
-            </Link>
-            <Link href="/#ride-sharing" className="text-sm font-medium hover:text-[#00aa55] transition-colors">
-              Ride Sharing
-            </Link>
-            <Link href="/#rewards" className="text-sm font-medium hover:text-[#00aa55] transition-colors">
-              Rewards
-            </Link>
-            <Link href="/about" className="text-sm font-medium hover:text-[#00aa55] transition-colors">
-              About Us
-            </Link>
-            <Link href="/contact" className="text-sm font-medium text-[#00aa55] transition-colors">
-              Contact
-            </Link>
-          </nav>
-
-          <Link href="/">
-            <Button variant="outline" className="border-[#00aa55] text-[#00aa55]">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
-            </Button>
+      {/* Main Content */}
+      <main className="container mx-auto px-4 pt-24 pb-20">
+        <div className="mb-8">
+          <Link href="/landing" className="inline-flex items-center text-[#00aa55] hover:text-[#00cc66]">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Home
           </Link>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 pt-32 pb-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

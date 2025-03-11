@@ -22,6 +22,7 @@ interface MapplsMapProps {
   }>;
   className?: string;
   onMapLoad?: (map: any) => void;
+  onError?: (error: any) => void;
 }
 
 export default function MapplsMap({
@@ -32,7 +33,8 @@ export default function MapplsMap({
   width = '100%',
   markers = [],
   className = '',
-  onMapLoad
+  onMapLoad,
+  onError
 }: MapplsMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,8 +49,10 @@ export default function MapplsMap({
     const initMap = () => {
       if (!mapContainerRef.current) return;
       if (!window.mappls) {
-        setError('Mappls API not loaded correctly');
+        const errorMsg = 'Mappls API not loaded correctly';
+        setError(errorMsg);
         setIsLoading(false);
+        if (onError) onError(errorMsg);
         return;
       }
       
@@ -77,14 +81,20 @@ export default function MapplsMap({
         
         // Call onMapLoad callback if provided
         if (onMapLoad && typeof onMapLoad === 'function') {
-          onMapLoad(map);
+          try {
+            onMapLoad(map);
+          } catch (err) {
+            console.error('Error in onMapLoad callback:', err);
+          }
         }
         
         setIsLoading(false);
       } catch (err) {
         console.error('Error initializing map:', err);
-        setError('Failed to initialize map');
+        const errorMsg = 'Failed to initialize map';
+        setError(errorMsg);
         setIsLoading(false);
+        if (onError) onError(err);
       }
     };
     
@@ -108,9 +118,11 @@ export default function MapplsMap({
     
     script.onload = initMap;
     
-    script.onerror = () => {
-      setError('Failed to load Mappls API script');
+    script.onerror = (err) => {
+      const errorMsg = 'Failed to load Mappls API script';
+      setError(errorMsg);
       setIsLoading(false);
+      if (onError) onError(err || errorMsg);
     };
     
     document.head.appendChild(script);
@@ -122,7 +134,7 @@ export default function MapplsMap({
         scriptToRemove.remove();
       }
     };
-  }, [apiKey, center, zoom, markers, onMapLoad, scriptId]);
+  }, [apiKey, center, zoom, markers, onMapLoad, onError, scriptId]);
   
   return (
     <div 
